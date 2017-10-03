@@ -1,13 +1,14 @@
 #![allow(unused_must_use)]
 use std::net::{TcpStream, TcpListener};
 use std::path::Path;
-use std::fs::{self, ReadDir};
-use std::io::{Read, Write};
+use std::fs::{self, ReadDir, File};
+use std::io::{Read, Write, BufReader};
 use std::thread;
 use std::env;
 
 /*
  * TODO
+ *  > Serving gophermap by default (index.gph)
  *  > File sending
  *  > Custom directory as an argument
  *  > Gophermap
@@ -33,7 +34,8 @@ fn main() {
     for client in server.incoming() {
         match client {
             Ok(client) => {
-                println!("CONNECT <- {}", client.peer_addr().unwrap().ip());
+                //println!("CONNECT <- {}", client.peer_addr().unwrap().ip()); // This is pretty
+                //spammy
                 thread::spawn(move || { handle(client); });
             }
             Err(e) => eprintln!("ERROR : {:?}", e),
@@ -70,22 +72,41 @@ fn handle(mut client: TcpStream) {
             } else if selector.starts_with("/") {
                 selector = ".".to_owned() + &selector;
             }
+            let borrowedsel = selector.clone();
             let cwd = env::current_dir().unwrap();
-            let mut path = Path::new(&selector);
+            let mut path = Path::new(&borrowedsel);
             // Check if the path the client requested is outside of our jail
-            if !path.canonicalize().unwrap().starts_with(
-                cwd.as_path()
-                    .canonicalize()
-                    .unwrap()
-                    .as_path(),
-            )
+            if !path.exists() ||
+                !path.canonicalize().unwrap().starts_with(
+                    cwd.as_path()
+                        .canonicalize()
+                        .unwrap()
+                        .as_path(),
+                )
             {
                 //Reset them to the root of our jail
                 path = cwd.as_path();
+                selector = ".".to_owned();
             }
             if path.is_file() {
-                // TODO implement sending files
+                if path.extension().unwrap() == "gph" {
+                    //This is a gopher menu, serve it to the client
+                    let contents = read_file(&path);
+                    match contents {
+                        Ok(contents) => {
+                            for line in contents.lines() {
+                                let mut line = line.to_owned();
+                                line += "\r\n";
+                                client.write(line.as_bytes());
+                            }
+                        }
+                        Err(_) => {
+                            client.write(b"iFailed to open requested file.\r\n.");
+                        }
+                    }
+                }
             } else {
+                client.write(b"iargoserv v1 - October 2017 - dashaw92\r\n");
                 let iter: ReadDir = fs::read_dir(&path).unwrap();
                 for entry in iter {
                     if let Ok(entry) = entry {
@@ -118,4 +139,12 @@ fn format(ltype: &str, display: &str, selector: &str, domain: &str, port: u32) -
         domain,
         port
     )
+}
+
+fn read_file<P: AsRef<Path>>(path: P) -> Result<String, std::io::Error> {
+    let file = File::open(path)?;
+    let mut reader = BufReader::new(file);
+    let mut contents = String::new();
+    reader.read_to_string(&mut contents);
+    Ok(contents)
 }
