@@ -99,7 +99,7 @@ fn handle(mut client: TcpStream, ipaddr: String, directory: String) {
             Ok(_) => (),
             Err(e) => {
                 eprintln!("READ FILE ERROR : {} -> {}", e, client_ip);
-                client.write(b"Error reading requested file.");
+                client.write(b"Error reading requested file.\r\n.");
                 return;
             }
         }
