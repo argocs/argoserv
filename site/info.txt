@@ -1,0 +1,5 @@
+This is a test server to show off argoserv, a Gopher server written in Rust-lang!
+
+If you find any bugs, please do report them to https://github.com/argocs/argoserv!
+Thank you!
+~dashaw92
