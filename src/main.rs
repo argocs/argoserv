@@ -66,20 +66,18 @@ fn handle(mut client: TcpStream, ipaddr: String, directory: String) {
             return;
         }
     };
-    println!("LIST '{}' -> {}", selector, client_ip);
+
     // Prepend a "." to the selector to keep us in the working directory of the server
     if selector == "/" {
         selector = ".".to_owned();
     } else if selector.starts_with("/") {
         selector = ".".to_owned() + &selector;
     }
-
     let _selector = selector.clone();
     let home = Path::new(&directory); //The home directory of the server
     let mut dest = Path::new(&directory).to_path_buf();
     dest.push(_selector);
     let mut dest = dest.as_path();
-
     let canonical_path = dest.canonicalize().unwrap_or(PathBuf::new());
     let canonical_cwd = home.canonicalize().unwrap_or(PathBuf::new());
     if !dest.exists() {
@@ -87,9 +85,10 @@ fn handle(mut client: TcpStream, ipaddr: String, directory: String) {
         client.write(&format!("1Return home\t/\t{}\t70\r\n.", ipaddr).as_bytes());
         return;
     } else if !canonical_path.starts_with(canonical_cwd) {
-        dest = Path::new(&directory);
+        dest = home; //Path::new(&directory);
     }
 
+    println!("LIST '{}' -> {}", selector, client_ip);
     //Serve the client
     if dest.is_file() {
         //Send the data of this file.
