@@ -9,7 +9,7 @@ This server only serves `index.gph` files in directories, so you must include on
 
 The server will replace the following tokens automatically:
 
-`$ADDRESS$` -> The IP address specified at runtime.  
+`$ADDRESS$` -> The IP address specified at runtime. **Note**: If you plan on making the server public, use your public IP address here. Local IP addresses will, for obvious reasons, not work for anyone outside of your intranet.  
 `\t` -> A tab character. Note this is a backslash followed by a `t`. Not an actual tab character.
 
 I recommend using `$ADDRESS$` for local host selectors in your `index.gph`s so you need not rewrite the IP everytime it changes.
